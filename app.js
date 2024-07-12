@@ -3,6 +3,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const cookieParser = require("cookie-parser");
+const session = require("express-session");
+const passport = require("passport");
 
 dotenv.config();
 
@@ -15,12 +17,31 @@ app.use(
   })
 );
 
-//route imports
-const authRouter = require("./routes/authentication");
 //middlewares
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET_KEY,
+    resave: true,
+    saveUninitialized: true,
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
+
+//route imports
+const authRouter = require("./routes/authentication");
+const postRouter = require("./routes/post");
+const followRouter = require("./routes/follow");
+const commentRouter = require("./routes/comment");
+const likeRouter = require("./routes/like");
+
 app.use("/", authRouter);
+app.use("/posts", postRouter);
+app.use("/follow", followRouter);
+app.use("/comment", commentRouter);
+app.use("/like", likeRouter);
 //initial connection
 const mongoURL = process.env.MONGODB_URL;
 const port = process.env.PORT || 4000;

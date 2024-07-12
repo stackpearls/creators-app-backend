@@ -4,7 +4,8 @@ const generateToken = require("../configurations/generateToken");
 const sendEmail = require("../configurations/sendEmail");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-
+const passport = require("passport");
+const FacebookStrategy = require("passport-facebook").Strategy;
 //register
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password, role, gender, age } = req.body;
@@ -24,7 +25,7 @@ const registerUser = asyncHandler(async (req, res) => {
   await newUser.save();
   const token = generateToken(newUser._id, newUser.role, "2h");
   if (newUser) {
-    const url = `${process.env.BASE_URL}:3000/verify/${newUser.id}/${token}`;
+    const url = `${process.env.BASE_URL}:${process.env.PORT}/verify/${newUser.id}/${token}`;
     await sendEmail(email, "Fanvue Verification", url);
     res.status(200).json({
       newUser,
@@ -60,9 +61,9 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user && user.verified) {
-    const passwwordMatched = await bcrypt.compare(password, user.password);
+    const passwordMatched = await bcrypt.compare(password, user.password);
 
-    if (passwwordMatched) {
+    if (passwordMatched) {
       const refreshToken = generateToken(user._id, user.role, "7d");
 
       const cookies = req.cookies;
@@ -140,6 +141,48 @@ const resetPassword = asyncHandler(async (req, res) => {
     res.status(400).json({ message: "Failed to reset password" });
     throw new Error("Failed to reset password");
   }
+});
+
+//Login using facebook
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: `${process.env.FACEBOOK_APP_ID}`,
+      clientSecret: `${process.env.FACEBOOK_APP_SECRET}`,
+      callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/facebook/callback`,
+    },
+
+    async (accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ facebookId: profile.id });
+
+        if (user) {
+          return done(null, user);
+        } else {
+          const newUser = new User({
+            facebookId: profile.id,
+            name: profile.displayName,
+            email: profile.email,
+          });
+
+          await newUser.save();
+          return done(null, newUser);
+        }
+      } catch (err) {
+        return done(err);
+      }
+    }
+  )
+);
+
+passport.serializeUser((user, done) => {
+  done(null, user.id);
+});
+
+passport.deserializeUser((id, done) => {
+  User.findById(id, (err, user) => {
+    done(err, user);
+  });
 });
 module.exports = {
   registerUser,

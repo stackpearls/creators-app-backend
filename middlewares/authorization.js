@@ -10,13 +10,10 @@ const authorizeUser = asyncHandler(async (req, res, next) => {
     try {
       const tokenReceived = req.headers.authorization.split(" ")[1];
 
-      const userDecoded = await jwt.verify(
-        tokenReceived,
-        process.env.SECRET_KEY
-      );
-      console.log(userDecoded.id);
+      const userDecoded = jwt.verify(tokenReceived, process.env.SECRET_KEY);
+
       const user = await User.findOne({ _id: userDecoded.id });
-      console.log(user);
+
       if (user) {
         req.user = user;
         next();

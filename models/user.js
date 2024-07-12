@@ -7,6 +7,8 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   profile: { type: String },
   coverImage: { type: String },
+  google_id: { type: String },
+  facebook_id: { type: String },
   role: {
     type: String,
     enum: ["creator", "subscriber"],
@@ -24,6 +26,12 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  following: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
   createdAt: {
     type: Date,
     default: Date.now,
