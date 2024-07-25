@@ -4,5 +4,5 @@ const { addLike, deleteLike } = require("../controllers/like");
 const router = express.Router();
 
 router.post("/add", authorizeUser, addLike);
-router.delete("/delete/:id", authorizeUser, deleteLike);
+router.post("/delete", authorizeUser, deleteLike);
 module.exports = router;

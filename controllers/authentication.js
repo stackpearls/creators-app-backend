@@ -6,26 +6,38 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const passport = require("passport");
 const FacebookStrategy = require("passport-facebook").Strategy;
+const GoogleStrategy = require("passport-google-oauth2").Strategy;
 //register
 const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password, role, gender, age } = req.body;
+  const { name, username, email, password, role, gender, age } = req.body;
+  console.log(name, email, password, role, gender, age);
 
-  if (!name || !email || !password || !role || !gender || !age) {
-    res.status(400).json({ message: "fields are not defined correctly" });
-    throw new Error("fields not defined properly");
+  if (!name || !username || !email || !password || !role || !gender || !age) {
+    res.status(400).json({ message: "Fields are not defined correctly" });
+    return;
   }
 
-  const userAlreadExists = await User.findOne({ email });
+  const userAlreadyExists = await User.findOne({ email });
 
-  if (userAlreadExists) {
-    res.status(400).json({ message: "User already exists" });
-    throw new Error("User already exists");
+  if (userAlreadyExists) {
+    res.status(400).json({ message: "Email is already registered" });
+    return;
   }
-  const newUser = new User({ name, email, password, role, gender, age });
+
+  const newUser = new User({
+    name,
+    username,
+    email,
+    password,
+    role,
+    gender,
+    age,
+  });
   await newUser.save();
+
   const token = generateToken(newUser._id, newUser.role, "2h");
   if (newUser) {
-    const url = `${process.env.BASE_URL}:${process.env.PORT}/verify/${newUser.id}/${token}`;
+    const url = `${process.env.BASE_URL}:${process.env.FRONTEND_PORT}/verify/${newUser.id}/${token}`;
     await sendEmail(email, "Fanvue Verification", url);
     res.status(200).json({
       newUser,
@@ -33,19 +45,25 @@ const registerUser = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(400).json({ message: "Failed to register user" });
-    throw new Error("Failed to register user");
+    return;
   }
 });
 
 //verify
 const verifyUser = asyncHandler(async (req, res) => {
   const user = await User.find({ _id: req.params.id });
-
-  if (!user[0]) {
+  console.log("here");
+  if (!user) {
     return res.status(400).send({ message: "Invalid link" });
   }
 
-  const userDecoded = jwt.verify(req.params.token, process.env.SECRET_KEY);
+  try {
+    var userDecoded = jwt.verify(req.params.token, process.env.SECRET_KEY);
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(400).send({ message: "Token has expired" });
+    }
+  }
 
   if (req.params.id !== userDecoded.id)
     return res.status(400).send({ message: "Invalid link" });
@@ -57,42 +75,79 @@ const verifyUser = asyncHandler(async (req, res) => {
 
 //login
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  console.log("login is started");
+  const { userId, email, password } = req.body;
+  console.log(userId, email, password);
+  if (userId) {
+    const user = await User.findById(userId);
+    const refreshToken = generateToken(user._id, user.role, "7d");
 
-  if (user && user.verified) {
-    const passwordMatched = await bcrypt.compare(password, user.password);
+    const cookies = req.cookies;
 
-    if (passwordMatched) {
-      const refreshToken = generateToken(user._id, user.role, "7d");
+    res.cookie("jwt", refreshToken, {
+      httpOnly: true,
 
-      const cookies = req.cookies;
-
-      res.cookie("jwt", refreshToken, {
-        httpOnly: true,
-
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
-
-      res.status(200).json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        profile: user.profile,
-        coverImage: user.coverImage,
-        age: user.age,
-        gender: user.gender,
-        role: user.role,
-      });
-    } else {
-      res.status(400).json({ message: "Please check your credentials" });
-      throw new Error("Please check your credentials");
-    }
-  } else {
-    res.status(400).json({
-      message: "Failed to login",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-    throw new Error("Failed to login");
+
+    res.status(200).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      username: user.username,
+      profile: user.profile,
+      coverImage: user.coverImage,
+      age: user.age,
+      gender: user.gender,
+      role: user.role,
+      following: user.following,
+      token: generateToken(user._id, user.role, "2h"),
+    });
+    return;
+  } else {
+    const user = await User.findOne({ email });
+
+    if (user && !user.verified) {
+      res
+        .status(400)
+        .json({ message: "User is not verified please verify via email" });
+      return;
+    } else if (user && user.verified) {
+      const passwordMatched = await bcrypt.compare(password, user.password);
+      console.log(passwordMatched);
+      if (passwordMatched) {
+        const refreshToken = generateToken(user._id, user.role, "7d");
+
+        const cookies = req.cookies;
+
+        res.cookie("jwt", refreshToken, {
+          httpOnly: true,
+
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(200).json({
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          username: user.username,
+          profile: user.profile,
+          coverImage: user.coverImage,
+          age: user.age,
+          gender: user.gender,
+          role: user.role,
+          following: user.following,
+          token: generateToken(user._id, user.role, "2h"),
+        });
+      } else {
+        res.status(400).json({ message: "Please check your credentials" });
+        // throw new Error("Please check your credentials");
+        return;
+      }
+    } else {
+      res.status(404).json({ message: "No such user found" });
+      return;
+    }
   }
 });
 
@@ -111,27 +166,47 @@ const logoutUser = asyncHandler(async (req, res) => {
 //forgetPassword
 const forgetPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-
+  console.log(email);
   const user = await User.findOne({ email });
 
   if (user) {
     const token = generateToken(user._id, user.role, "1m");
-    const url = `${process.env.BASE_URL}:${process.env.PORT}/forgetpassword/${token}`;
+    const url = `${process.env.BASE_URL}:${process.env.FRONTEND_PORT}/resetpassword/${token}`;
     await sendEmail(email, "Reset Password", url);
     res.status(200).json({ message: "Reset Password through your email" });
+    return;
   } else {
     res.status(400).json({ message: "email not found" });
-    throw new Error("email not found");
+    return;
   }
 });
 
 //reset Password
 const resetPassword = asyncHandler(async (req, res) => {
-  const { password } = req.body;
+  const { token, password } = req.body;
+
+  if (!token || !password) {
+    res.status(400).json({ message: "Please provide complete data" });
+    return;
+  }
+  try {
+    var userDecoded = jwt.verify(token, process.env.SECRET_KEY);
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res.status(400).send({ message: "Token has expired" });
+    }
+  }
+
+  const user = await User.findById(userDecoded.id);
+  if (!user) {
+    res.status(404).json({ message: "Please provide valid token" });
+    return;
+  }
+
   const salt = await bcrypt.genSalt(10);
   const hash = await bcrypt.hash(password, salt);
 
-  const updated = await User.findByIdAndUpdate(req.user._id, {
+  const updated = await User.findByIdAndUpdate(userDecoded.id, {
     password: hash,
   });
 
@@ -143,29 +218,97 @@ const resetPassword = asyncHandler(async (req, res) => {
   }
 });
 
-//Login using facebook
+const loginFailed = asyncHandler(async (req, res) => {
+  res.status(401).json({ message: "Failed logging in" });
+});
+
+//login/signup with facebook
 passport.use(
   new FacebookStrategy(
     {
-      clientID: `${process.env.FACEBOOK_APP_ID}`,
-      clientSecret: `${process.env.FACEBOOK_APP_SECRET}`,
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
       callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/facebook/callback`,
+      profileFields: ["id", "displayName", "emails"],
     },
-
     async (accessToken, refreshToken, profile, done) => {
       try {
-        let user = await User.findOne({ facebookId: profile.id });
+        let user = await User.findOne({ facebook_id: profile.id });
 
         if (user) {
           return done(null, user);
         } else {
+          const username = profile.displayName.split(" ").join("") + profile.id;
+          const password = Math.random(100000, 200000);
+          console.log(password);
           const newUser = new User({
-            facebookId: profile.id,
+            facebook_id: profile.id,
             name: profile.displayName,
-            email: profile.email,
+            email: profile.emails ? profile.emails[0].value : null,
+            username,
+            password,
+            verified: true,
+          });
+          await newUser.save();
+
+          return done(null, newUser);
+        }
+      } catch (err) {
+        return done(err);
+      }
+    }
+  )
+);
+
+//login/signup with google
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/google/callback`,
+
+      passReqToCallback: true,
+    },
+    async (req, accessToken, refreshToken, profile, done) => {
+      try {
+        let user = await User.findOne({ google_id: profile.id });
+
+        if (user) {
+          return done(null, user);
+        } else {
+          console.log(profile);
+          if (profile.displayName) {
+            username = profile.displayName.split(" ").join("") + profile.id;
+          } else if (profile.emails && profile.emails[0].value) {
+            username = profile.emails[0].value.split("@")[0] + profile.id;
+          } else {
+            username = "user" + profile.id;
+          }
+
+          if (profile.displayName) {
+            ProfileName = profile.displayName.split(" ").join("");
+          } else if (profile.emails && profile.emails[0].value) {
+            ProfileName = profile.emails[0].value.split("@")[0];
+          } else {
+            ProfileName = "user" + Math.random(1, 100000);
+          }
+
+          const password = Math.random(100000, 200000);
+          console.log(password);
+          const newUser = new User({
+            google_id: profile.id,
+            name: ProfileName,
+            email: profile.emails ? profile.emails[0].value : null,
+            gender: profile.gender,
+            username,
+            password,
+            verified: true,
           });
 
+          console.log(newUser);
           await newUser.save();
+
           return done(null, newUser);
         }
       } catch (err) {
@@ -179,10 +322,13 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-passport.deserializeUser((id, done) => {
-  User.findById(id, (err, user) => {
-    done(err, user);
-  });
+passport.deserializeUser(async (id, done) => {
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (err) {
+    done(err, null);
+  }
 });
 module.exports = {
   registerUser,
@@ -191,4 +337,5 @@ module.exports = {
   logoutUser,
   forgetPassword,
   resetPassword,
+  loginFailed,
 };

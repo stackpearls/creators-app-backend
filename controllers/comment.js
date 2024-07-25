@@ -1,5 +1,7 @@
+const { default: mongoose } = require("mongoose");
 const Comment = require("../models/comment");
 const asyncHandler = require("express-async-handler");
+const Post = require("../models/post");
 //add comment
 const addComment = asyncHandler(async (req, res) => {
   const { comment, postId } = req.body;
@@ -54,4 +56,43 @@ const updateComment = asyncHandler(async (req, res) => {
   res.status(200).json({ message: "Comment has been updated successfully" });
 });
 
-module.exports = { addComment, deleteComment, updateComment };
+//get comments
+const getComments = asyncHandler(async (req, res) => {
+  const { postId } = req.body;
+
+  const postExists = await Post.findById(postId);
+
+  if (!postExists) {
+    res.status(404).json({ message: "No such post exists" });
+  }
+
+  const comments = await Comment.aggregate([
+    {
+      $match: {
+        postId: new mongoose.Types.ObjectId(postId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "userProfile",
+      },
+    },
+    {
+      $unwind: "$userProfile",
+    },
+    {
+      $project: {
+        "userProfile.password": 0,
+        "userProfile.google_id": 0,
+        "userProfile.facebook_id": 0,
+      },
+    },
+  ]);
+  console.log(comments);
+  res.status(200).json(comments);
+});
+
+module.exports = { addComment, deleteComment, updateComment, getComments };

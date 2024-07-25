@@ -8,23 +8,53 @@ const {
   logoutUser,
   forgetPassword,
   resetPassword,
+  loginFailed,
 } = require("../controllers/authentication");
 const { authorizeUser } = require("../middlewares/authorization");
 
 router.post("/register", registerUser);
-router.patch("/verify/:id/:token", verifyUser);
+router.get("/verify/:id/:token", verifyUser);
 router.post("/login", loginUser);
-router.get("/login/facebook", passport.authenticate("facebook"));
+
 router.get(
-  "/facebook/callback",
-  passport.authenticate("facebook", { failureRedirect: "/login" }),
+  "/auth/facebook",
+  passport.authenticate("facebook", { scope: ["email"] })
+);
+
+router.get(
+  "/auth/google",
+  passport.authenticate("google", { scope: ["email", "profile"] })
+);
+
+// Facebook callback URL
+router.get(
+  "/auth/facebook/callback",
+  passport.authenticate("facebook", {
+    failureRedirect: "/login/failed",
+  }),
   (req, res) => {
-    console.log("success");
-    res.redirect("/somewhere"); // Example redirect after successful login
+    const userId = req.user.id;
+    console.log("1");
+    res.redirect(`http://localhost:4200/login?userId=${userId}`);
   }
 );
+
+//google callback url
+router.get(
+  "/auth/google/callback",
+  passport.authenticate("google", {
+    failureRedirect: "/login/failed",
+  }),
+  (req, res) => {
+    const userId = req.user.id;
+    res.redirect(`http://localhost:4200/login?userId=${userId}`);
+  }
+);
+
+router.get("/login/failed", loginFailed);
+
 router.post("/logout", logoutUser);
-router.post("/forgetpassword/:token", forgetPassword);
-router.patch("/password/reset", authorizeUser, resetPassword);
+router.post("/forgetpassword", forgetPassword);
+router.patch("/password/reset", resetPassword);
 
 module.exports = router;

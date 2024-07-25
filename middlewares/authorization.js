@@ -19,17 +19,14 @@ const authorizeUser = asyncHandler(async (req, res, next) => {
         next();
       } else {
         res.status(404).json({ message: "User not found" });
-        throw new Error("User not found");
       }
     } catch (error) {
       res.status(401).json({ message: "User not authorized 1" });
-      throw new Error("User not authorized");
     }
   } else {
     res.status(401).json({
       message: "User not authorized 2",
     });
-    throw new Error("User not authorized");
   }
 });
 

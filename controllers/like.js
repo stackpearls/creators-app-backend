@@ -6,16 +6,19 @@ const Post = require("../models/post");
 //add like
 const addLike = asyncHandler(async (req, res) => {
   const { postId } = req.body;
-  const postExists = await Post.findById(postId);
+  const { _id: userId } = req.user;
+  console.log(userId);
 
-  if (!postExists) {
-    res.status(404).json({ message: "Post does not exists" });
-    throw new Error("Post does not exists");
+  const likeExists = await Like.findOne({ userId, postId });
+
+  if (likeExists) {
+    res.status(400).json({ message: "Already liked by user" });
+    return;
   }
 
   const newLike = new Like({
     postId,
-    userId: req.user.id,
+    userId: userId,
   });
 
   newLike.save();
@@ -25,16 +28,18 @@ const addLike = asyncHandler(async (req, res) => {
 
 //delete like
 const deleteLike = asyncHandler(async (req, res) => {
-  const likeId = req.params.id;
+  const { postId } = req.body;
+  const { _id: userId } = req.user;
 
-  const likeExists = await Like.findById(likeId);
+  const likeExists = await Like.findOne({ postId, userId });
+  console.log(likeExists);
 
   if (!likeExists) {
     res.status(404).json({ message: "Like does not exists" });
     throw new Error("Like does not exists");
   }
 
-  await Like.findByIdAndDelete(likeId);
+  await Like.findByIdAndDelete(likeExists._id);
 
   res.status(200).json({ message: "Like is deleted" });
 });
