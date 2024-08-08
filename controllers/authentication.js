@@ -246,20 +246,34 @@ passport.use(
         if (user) {
           return done(null, user);
         } else {
-          const username = profile.displayName.split(" ").join("") + profile.id;
-          const password = Math.random(100000, 200000);
-
-          const newUser = new User({
-            facebook_id: profile.id,
-            name: profile.displayName,
+          user = await User.findOne({
             email: profile.emails ? profile.emails[0].value : null,
-            username,
-            password,
-            verified: true,
           });
-          await newUser.save();
 
-          return done(null, newUser);
+          if (user && !user.facebook_id) {
+            user.facebook_id = profile.id;
+            await user.save();
+            return done(null, user);
+          } else {
+            const username =
+              (profile.displayName
+                ? profile.displayName.split(" ").join("")
+                : "user") + profile.id;
+            const password = Math.random().toString(36).substring(2, 15);
+
+            const newUser = new User({
+              facebook_id: profile.id,
+              name: profile.displayName,
+              email: profile.emails ? profile.emails[0].value : null,
+              username,
+              password,
+              verified: true,
+            });
+
+            await newUser.save();
+
+            return done(null, newUser);
+          }
         }
       } catch (err) {
         return done(err);
