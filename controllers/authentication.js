@@ -275,7 +275,6 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/google/callback`,
-
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
@@ -285,37 +284,46 @@ passport.use(
         if (user) {
           return done(null, user);
         } else {
-          if (profile.displayName) {
-            username = profile.displayName.split(" ").join("") + profile.id;
-          } else if (profile.emails && profile.emails[0].value) {
-            username = profile.emails[0].value.split("@")[0] + profile.id;
-          } else {
-            username = "user" + profile.id;
-          }
-
-          if (profile.displayName) {
-            ProfileName = profile.displayName.split(" ").join("");
-          } else if (profile.emails && profile.emails[0].value) {
-            ProfileName = profile.emails[0].value.split("@")[0];
-          } else {
-            ProfileName = "user" + Math.random(1, 100000);
-          }
-
-          const password = Math.random(100000, 200000);
-
-          const newUser = new User({
-            google_id: profile.id,
-            name: ProfileName,
+          user = await User.findOne({
             email: profile.emails ? profile.emails[0].value : null,
-            gender: profile.gender,
-            username,
-            password,
-            verified: true,
           });
 
-          await newUser.save();
+          if (user && !user.google_id) {
+            user.google_id = profile.id;
+            await user.save();
+            return done(null, user);
+          } else {
+            let username;
+            let ProfileName;
 
-          return done(null, newUser);
+            if (profile.displayName) {
+              username = profile.displayName.split(" ").join("") + profile.id;
+              ProfileName = profile.displayName.split(" ").join("");
+            } else if (profile.emails && profile.emails[0].value) {
+              username = profile.emails[0].value.split("@")[0] + profile.id;
+              ProfileName = profile.emails[0].value.split("@")[0];
+            } else {
+              username = "user" + profile.id;
+              ProfileName =
+                "user" + Math.random().toString(36).substring(2, 15);
+            }
+
+            const password = Math.random().toString(36).substring(2, 15);
+
+            const newUser = new User({
+              google_id: profile.id,
+              name: ProfileName,
+              email: profile.emails ? profile.emails[0].value : null,
+              gender: profile.gender,
+              username,
+              password,
+              verified: true,
+            });
+
+            await newUser.save();
+
+            return done(null, newUser);
+          }
         }
       } catch (err) {
         return done(err);
