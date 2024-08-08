@@ -10,7 +10,6 @@ const GoogleStrategy = require("passport-google-oauth2").Strategy;
 //register
 const registerUser = asyncHandler(async (req, res) => {
   const { name, username, email, password, role, gender, age } = req.body;
-  console.log(name, email, password, role, gender, age);
 
   if (!name || !username || !email || !password || !role || !gender || !age) {
     res.status(400).json({ message: "Fields are not defined correctly" });
@@ -52,7 +51,7 @@ const registerUser = asyncHandler(async (req, res) => {
 //verify
 const verifyUser = asyncHandler(async (req, res) => {
   const user = await User.find({ _id: req.params.id });
-  console.log("here");
+
   if (!user) {
     return res.status(400).send({ message: "Invalid link" });
   }
@@ -75,9 +74,8 @@ const verifyUser = asyncHandler(async (req, res) => {
 
 //login
 const loginUser = asyncHandler(async (req, res) => {
-  console.log("login is started");
   const { userId, email, password } = req.body;
-  console.log(userId, email, password);
+
   if (userId) {
     const user = await User.findById(userId);
     const refreshToken = generateToken(user._id, user.role, "7d");
@@ -102,6 +100,14 @@ const loginUser = asyncHandler(async (req, res) => {
       role: user.role,
       following: user.following,
       token: generateToken(user._id, user.role, "2h"),
+      bio: user.bio,
+      location: user.location,
+      createdAt:
+        user.createdAt.getDate() +
+        "-" +
+        user.createdAt.getMonth() +
+        "-" +
+        user.createdAt.getFullYear(),
     });
     return;
   } else {
@@ -114,7 +120,7 @@ const loginUser = asyncHandler(async (req, res) => {
       return;
     } else if (user && user.verified) {
       const passwordMatched = await bcrypt.compare(password, user.password);
-      console.log(passwordMatched);
+
       if (passwordMatched) {
         const refreshToken = generateToken(user._id, user.role, "7d");
 
@@ -134,14 +140,16 @@ const loginUser = asyncHandler(async (req, res) => {
           profile: user.profile,
           coverImage: user.coverImage,
           age: user.age,
+          location: user.location,
           gender: user.gender,
           role: user.role,
           following: user.following,
           token: generateToken(user._id, user.role, "2h"),
+          createdAt: user.createdAt,
         });
       } else {
         res.status(400).json({ message: "Please check your credentials" });
-        // throw new Error("Please check your credentials");
+
         return;
       }
     } else {
@@ -166,7 +174,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 //forgetPassword
 const forgetPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
-  console.log(email);
+
   const user = await User.findOne({ email });
 
   if (user) {
@@ -240,7 +248,7 @@ passport.use(
         } else {
           const username = profile.displayName.split(" ").join("") + profile.id;
           const password = Math.random(100000, 200000);
-          console.log(password);
+
           const newUser = new User({
             facebook_id: profile.id,
             name: profile.displayName,
@@ -277,7 +285,6 @@ passport.use(
         if (user) {
           return done(null, user);
         } else {
-          console.log(profile);
           if (profile.displayName) {
             username = profile.displayName.split(" ").join("") + profile.id;
           } else if (profile.emails && profile.emails[0].value) {
@@ -295,7 +302,7 @@ passport.use(
           }
 
           const password = Math.random(100000, 200000);
-          console.log(password);
+
           const newUser = new User({
             google_id: profile.id,
             name: ProfileName,
@@ -306,7 +313,6 @@ passport.use(
             verified: true,
           });
 
-          console.log(newUser);
           await newUser.save();
 
           return done(null, newUser);

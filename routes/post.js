@@ -5,6 +5,6 @@ const upload = require("../middlewares/fileupload");
 const router = express.Router();
 
 router.post("/create", authorizeUser, upload.array("files", 10), createPost);
-router.post("/", authorizeUser, getAllPosts);
+router.get("/", authorizeUser, getAllPosts);
 
 module.exports = router;

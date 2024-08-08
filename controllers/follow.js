@@ -18,13 +18,12 @@ const followUnfollowUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.findById(userId);
-  console.log(followIsTrue + " " + user.following.includes(userToFollow));
 
   if (followIsTrue) {
     if (!user.following.includes(userIdToFollow)) {
       user.following.push(userIdToFollow);
       await user.save();
-      console.log("from follow");
+
       res.status(200).json({ message: "User has been followed successfully" });
     } else {
       res.status(400).json({ message: "User already  followed by the you" });
@@ -33,10 +32,9 @@ const followUnfollowUser = asyncHandler(async (req, res) => {
   } else if (!followIsTrue) {
     if (user.following.includes(userIdToFollow)) {
       const index = user.following.indexOf(userIdToFollow);
-      console.log(index);
+
       user.following.splice(index, 1);
       await user.save();
-      console.log("from unfollow");
 
       res
         .status(200)

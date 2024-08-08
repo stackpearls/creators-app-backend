@@ -37,7 +37,7 @@ const deleteComment = asyncHandler(async (req, res) => {
 const updateComment = asyncHandler(async (req, res) => {
   const commentId = req.params.id;
   const { comment } = req.body;
-  console.log(commentId + " new comment" + comment);
+
   if (!commentId || !comment) {
     res
       .status(400)
@@ -91,7 +91,7 @@ const getComments = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  console.log(comments);
+
   res.status(200).json(comments);
 });
 

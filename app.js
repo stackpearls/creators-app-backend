@@ -6,10 +6,18 @@ const cookieParser = require("cookie-parser");
 const session = require("express-session");
 const passport = require("passport");
 const path = require("path");
-
+const { Server } = require("socket.io");
+const http = require("http");
 dotenv.config();
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:4200",
+    credentials: true,
+  },
+});
 
 app.use(
   cors({
@@ -21,20 +29,12 @@ app.use(
 //middlewares
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "middlewares/uploads"))
-);
+app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
 app.use(
   session({
     secret: process.env.SESSION_SECRET_KEY,
     resave: true,
     saveUninitialized: true,
-    // cookie: {
-    //   httpOnly: true,
-    //   secure: false, // Set to true if using HTTPS
-    //   sameSite: "lax",
-    // },
   })
 );
 app.use(passport.initialize());
@@ -46,21 +46,30 @@ const postRouter = require("./routes/post");
 const followRouter = require("./routes/follow");
 const commentRouter = require("./routes/comment");
 const likeRouter = require("./routes/like");
+const userRouter = require("./routes/user");
+const conversationRouter = require("./routes/conversation");
+const messageRouter = require("./routes/message");
+const { handleSocketConnection } = require("./controllers/socket");
 
 app.use("/", authRouter);
 app.use("/posts", postRouter);
 app.use("/follow", followRouter);
 app.use("/comment", commentRouter);
 app.use("/like", likeRouter);
-//initial connection
+app.use("/user", userRouter);
+app.use("/conversation", conversationRouter);
+app.use("/message", messageRouter);
 
+//initial socket connection
+handleSocketConnection(io);
+//initial connection
 const port = process.env.PORT || 4000;
 mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {
     console.log("mongod db connected successfully");
 
-    app.listen(port, () => {
+    server.listen(port, () => {
       console.log(`Server connected successfully on port ${port}`);
     });
   })

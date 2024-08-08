@@ -9,8 +9,9 @@ const createPost = asyncHandler(async (req, res) => {
   const { id: userId } = req.user;
 
   if (!req.files || req.files.length === 0) {
-    res.status(400).json({ message: "Please attach at least one image" });
-    throw new Error("Please attach at least one image");
+    return res
+      .status(400)
+      .json({ message: "Please attach at least one image" });
   }
   const media = req.files.map((file) => `/uploads/${file.filename}`);
   const newPost = new Post({ description, media, userId });
@@ -20,7 +21,7 @@ const createPost = asyncHandler(async (req, res) => {
 
 const getAllPosts = asyncHandler(async (req, res) => {
   const { following } = req.body;
-  const { id: userId } = req.user;
+  const { _id: userId } = req.user;
 
   if (following && Array.isArray(following) && following.length > 0) {
     const posts = await Post.aggregate([
@@ -66,7 +67,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
     const posts = await Post.aggregate([
       {
         $match: {
-          userId: mongoose.Types.ObjectId,
+          userId: userId,
         },
       },
       {
@@ -85,14 +86,6 @@ const getAllPosts = asyncHandler(async (req, res) => {
           "user.password": 0,
         },
       },
-      // {
-      //   $lookup: {
-      //     from: "comments",
-      //     localField: "_id",
-      //     foreignField: "postId",
-      //     as: "comments",
-      //   },
-      // },
 
       {
         $lookup: {

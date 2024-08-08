@@ -6,10 +6,12 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  profile: { type: String },
+  profile: { type: String, default: "/uploads/default_profile_picture.png" },
   coverImage: { type: String },
   google_id: { type: String },
   facebook_id: { type: String },
+  location: { type: String },
+  bio: { type: String },
   role: {
     type: String,
     enum: ["creator", "subscriber"],
