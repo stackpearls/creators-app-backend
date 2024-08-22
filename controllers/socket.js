@@ -22,6 +22,7 @@ const getUser = asyncHandler(async (userId) => {
 
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
+    console.log("new user connected", socket.id);
     socket.on("AddUser", (data) => {
       addUser(data.userId, data.name, socket.id);
     });
@@ -30,19 +31,15 @@ const handleSocketConnection = (io) => {
       const receiver = await getUser(data.receiverId);
       if (receiver) {
         io.to(receiver.socketId).emit("getMessage", {
-          sender: data.userId,
+          sender: data.sender,
           conversationId: data.conversationId,
           createdAt: data.createdAt,
           message: data.message,
         });
-        console.log("Is working fine");
-      } else {
-        console.log("Reciever is not online but message is sent");
       }
     });
 
     socket.on("disconnect", async () => {
-      console.log("a user disconnected");
       await removeUser(socket.id);
     });
   });
