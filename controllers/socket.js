@@ -20,6 +20,8 @@ const getUser = asyncHandler(async (userId) => {
   return await Socket.findOne({ userId });
 });
 
+const activeStreams = {};
+
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
     console.log("new user connected", socket.id);
@@ -36,6 +38,52 @@ const handleSocketConnection = (io) => {
           createdAt: data.createdAt,
           message: data.message,
         });
+      }
+    });
+
+    // Handle offer from broadcaster
+    socket.on("offer", (data) => {
+      const { offer, broadcasterId } = data;
+
+      activeStreams[broadcasterId] = {
+        offer,
+        streamerSocketId: socket.id,
+        broadcasterId: broadcasterId,
+      };
+
+      io.emit("streams-available", activeStreams);
+      console.log(`Offer stored for broadcaster: ${broadcasterId}`);
+    });
+
+    // When a viewer wants to watch a stream
+    socket.on("watch-stream", (broadcasterId) => {
+      if (activeStreams[broadcasterId]) {
+        const { offer, streamerSocketId } = activeStreams[broadcasterId];
+        socket.join(broadcasterId);
+        socket.emit("offer", { offer, broadcasterId: streamerSocketId });
+        console.log(
+          `Offer sent to viewer: ${socket.id} for broadcaster: ${broadcasterId}`
+        );
+      } else {
+        socket.emit("stream-not-found", { message: "Stream not available" });
+      }
+    });
+
+    // When viewer sends an answer to the broadcaster
+    socket.on("answer", (data) => {
+      const { answer, broadcasterId } = data;
+      socket.to(broadcasterId).emit("answer", { answer, viewerId: socket.id });
+      console.log(`Answer sent to broadcaster: ${broadcasterId}`);
+    });
+
+    // Handle ICE candidates
+    socket.on("ice-candidate", (data) => {
+      const { candidate, targetId } = data;
+      if (targetId) {
+        socket.to(targetId).emit("ice-candidate", candidate);
+        console.log(`ICE candidate sent to: ${targetId}`);
+      } else {
+        console.error("ICE candidate target ID is missing or undefined");
       }
     });
 

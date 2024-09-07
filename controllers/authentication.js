@@ -178,7 +178,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (user) {
-    const token = generateToken(user._id, user.role, "1m");
+    const token = generateToken(user._id, user.role, "5m");
     const url = `${process.env.BASE_URL}:${process.env.FRONTEND_PORT}/resetpassword/${token}`;
     await sendEmail(email, "Reset Password", url);
     res.status(200).json({ message: "Reset Password through your email" });
@@ -255,10 +255,17 @@ passport.use(
             await user.save();
             return done(null, user);
           } else {
-            const username =
+            const timestamp = Date.now().toString().slice(-3);
+            const randomNum = Math.floor(10 + Math.random() * 90);
+
+            const username = (
               (profile.displayName
-                ? profile.displayName.split(" ").join("")
-                : "user") + profile.id;
+                ? profile.displayName.split(" ").join("").slice(0, 5) // Limit displayName to 5 characters
+                : "user") +
+              profile.id.slice(0, 2) +
+              timestamp +
+              randomNum
+            ).slice(0, 12);
             const password = Math.random().toString(36).substring(2, 15);
 
             const newUser = new User({
