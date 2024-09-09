@@ -1,7 +1,11 @@
 const Post = require("../models/post");
+const Like = require("../models/like");
+const Comment = require("../models/comment");
 const asyncHandler = require("express-async-handler");
 const User = require("../models/user");
 const mongoose = require("mongoose");
+const fs = require("fs");
+const path = require("path");
 
 //create post
 const createPost = asyncHandler(async (req, res) => {
@@ -112,4 +116,54 @@ const getAllPosts = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getAllPosts, createPost };
+const deletePost = asyncHandler(async (req, res) => {
+  const postId = req.params.postId;
+
+  if (!postId) {
+    return res.status(400).json({ message: "Bad request: postId is required" });
+  }
+
+  const session = await Post.startSession();
+  session.startTransaction();
+  try {
+    const deletedPost = await Post.findByIdAndDelete(postId);
+    console.log(deletedPost);
+    if (!deletedPost) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ message: "Post not found" });
+    }
+
+    deletedPost.media.forEach((file) => {
+      const filePath = path.join(__dirname, "../", file);
+      console.log(filePath);
+
+      fs.unlink(filePath, (err) => {
+        if (err) {
+          console.log(`Failed to deleted file : ${filePath}`, err);
+        } else {
+          console.log(`Successfully deleted file : ${filePath}`);
+        }
+      });
+    });
+
+    await Like.deleteMany({ postId }, { session });
+
+    await Comment.deleteMany({ postId }, { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({ message: "Post deleted successfully" });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
+    return res.status(500).json({
+      message: "Error occurred during deletion",
+      error: error.message,
+    });
+  }
+});
+
+module.exports = { getAllPosts, createPost, deletePost };
