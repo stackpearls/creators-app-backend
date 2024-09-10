@@ -314,30 +314,28 @@ passport.use(
             await user.save();
             return done(null, user);
           } else {
-            let username;
-            let ProfileName;
+            const timestamp = Date.now().toString().slice(-3); // Last 3 digits of timestamp
+            const randomNum = Math.floor(10 + Math.random() * 90); // 2-digit random number
 
-            if (profile.displayName) {
-              username = profile.displayName.split(" ").join("") + profile.id;
-              ProfileName = profile.displayName.split(" ").join("");
-            } else if (profile.emails && profile.emails[0].value) {
-              username = profile.emails[0].value.split("@")[0] + profile.id;
-              ProfileName = profile.emails[0].value.split("@")[0];
-            } else {
-              username = "user" + profile.id;
-              ProfileName =
-                "user" + Math.random().toString(36).substring(2, 15);
-            }
+            // Limit displayName to 5 characters, similar to Facebook logic
+            const username = (
+              (profile.displayName
+                ? profile.displayName.split(" ").join("").slice(0, 5) // First 5 characters of display name
+                : "user") +
+              profile.id.slice(0, 2) + // First 2 characters of the Google profile ID
+              timestamp + // Last 3 digits of the current timestamp
+              randomNum
+            ) // Random 2-digit number
+              .slice(0, 12); // Limit the username to 12 characters
 
-            const password = Math.random().toString(36).substring(2, 15);
+            const password = Math.random().toString(36).substring(2, 15); // Random password
 
             const newUser = new User({
               google_id: profile.id,
-              name: ProfileName,
+              name: profile.displayName || "User", // Use displayName or fallback
               email: profile.emails ? profile.emails[0].value : null,
-              gender: profile.gender,
-              username,
-              password,
+              username, // Generated username
+              password, // Randomly generated password
               verified: true,
             });
 

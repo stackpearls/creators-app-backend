@@ -101,8 +101,17 @@ const getAllPosts = asyncHandler(async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
         $addFields: {
           totalLikes: { $size: "$likes" },
+          totalComments: { $size: "$comments" },
         },
       },
       {
