@@ -36,7 +36,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const token = generateToken(newUser._id, newUser.role, "2h");
   if (newUser) {
-    const url = `${process.env.BASE_URL}:${process.env.FRONTEND_PORT}/verify/${newUser.id}/${token}`;
+    const url = `${process.env.FRONTEND_URL}/verify/${newUser.id}/${token}`;
     await sendEmail(email, "Fanvue Verification", url);
     res.status(200).json({
       newUser,
@@ -179,7 +179,7 @@ const forgetPassword = asyncHandler(async (req, res) => {
 
   if (user) {
     const token = generateToken(user._id, user.role, "5m");
-    const url = `${process.env.BASE_URL}:${process.env.FRONTEND_PORT}/resetpassword/${token}`;
+    const url = `${process.env.FRONTEND_URL}/resetpassword/${token}`;
     await sendEmail(email, "Reset Password", url);
     res.status(200).json({ message: "Reset Password through your email" });
     return;
@@ -236,7 +236,7 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/facebook/callback`,
+      callbackURL: `${process.env.FRONTEND_URL}/auth/facebook/callback`,
       profileFields: ["id", "displayName", "emails"],
     },
     async (accessToken, refreshToken, profile, done) => {

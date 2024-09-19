@@ -23,7 +23,7 @@ router.get(
 
 router.get(
   "/auth/google",
-  passport.authenticate("google", { scope: ["email", "profile"] })
+  passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
 // Facebook callback URL
@@ -35,7 +35,7 @@ router.get(
   (req, res) => {
     const userId = req.user.id;
     console.log("1");
-    res.redirect(`http://localhost:4200/login?userId=${userId}`);
+    res.redirect(`${process.env.FRONTEND_URL}/login?userId=${userId}`);
   }
 );
 
@@ -47,7 +47,7 @@ router.get(
   }),
   (req, res) => {
     const userId = req.user.id;
-    res.redirect(`http://localhost:4200/login?userId=${userId}`);
+    res.redirect(`${process.env.FRONTEND_URL}/login?userId=${userId}`);
   }
 );
 

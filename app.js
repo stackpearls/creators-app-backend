@@ -14,14 +14,14 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:4200",
+    origin: "http://93.127.215.61",
     credentials: true,
   },
 });
 
 app.use(
   cors({
-    origin: "http://localhost:4200",
+    origin: "http://93.127.215.61",
     credentials: true,
   })
 );
