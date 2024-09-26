@@ -28,14 +28,42 @@ const getUsers = asyncHandler(async (req, res) => {
     verified: true,
   });
 
-  res
-    .status(200)
-    .json({
-      users,
-      currentPage: page,
-      totalPages: Math.ceil(totalUsers / limit),
-      totalUsers,
-    });
+  res.status(200).json({
+    users,
+    currentPage: page,
+    totalPages: Math.ceil(totalUsers / limit),
+    totalUsers,
+  });
+});
+const getFollowingUsers = asyncHandler(async (req, res) => {
+  const { _id: userId } = req.user;
+  const currentUser = await User.findById(userId).select("following");
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 5;
+  const skip = (page - 1) * limit;
+  const users = await User.find({
+    _id: {
+      $ne: userId,
+      $in: currentUser.following,
+    },
+    verified: true,
+  }).select(["-password", "-google_id", "-facebook_id", "-email"]);
+  // .skip(skip)
+  // .limit(limit);
+  const totalUsers = await User.countDocuments({
+    _id: {
+      $ne: userId,
+      $nin: currentUser.following,
+    },
+    verified: true,
+  });
+
+  res.status(200).json({
+    users,
+    currentPage: page,
+    totalPages: Math.ceil(totalUsers / limit),
+    totalUsers,
+  });
 });
 
 const deleteUser = asyncHandler(async (req, res) => {
@@ -104,4 +132,4 @@ const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getUsers, deleteUser, updateUser };
+module.exports = { getUsers, deleteUser, updateUser, getFollowingUsers };

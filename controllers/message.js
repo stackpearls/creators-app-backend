@@ -35,10 +35,13 @@ const sendMessage = asyncHandler(async (req, res) => {
 //get all messages
 const getAllMessages = asyncHandler(async (req, res) => {
   const conversationId = req.params.conversationId;
+  const { limit = 4, page = 1 } = req.query;
 
-  const messages = await Message.find({ conversationId });
+  const messages = await Message.find({ conversationId })
+    .skip((page - 1) * limit)
+    .limit(parseInt(limit));
 
-  if (!messages) {
+  if (!messages || messages.length === 0) {
     return res
       .status(404)
       .json({ message: "No messages found in this conversation" });

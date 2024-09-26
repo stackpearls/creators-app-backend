@@ -21,12 +21,20 @@ const getUser = asyncHandler(async (userId) => {
 });
 
 const activeStreams = {};
+const activeUsers = {};
 
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
     console.log("new user connected", socket.id);
     socket.on("AddUser", (data) => {
       addUser(data.userId, data.name, socket.id);
+      activeUsers[data.userId] = {
+        name: data.name,
+        socketId: socket.id,
+        _id: data.userId,
+      };
+      console.log(`User added: ${data.name} with ID: ${data.userId}`);
+      io.emit("active-users", Object.values(activeUsers));
     });
 
     socket.on("sendMessage", async (data) => {
@@ -89,6 +97,20 @@ const handleSocketConnection = (io) => {
 
     socket.on("disconnect", async () => {
       await removeUser(socket.id);
+
+      // Find the userId associated with the disconnected socket
+      const userId = Object.keys(activeUsers).find(
+        (key) => activeUsers[key].socketId === socket.id
+      );
+
+      if (userId) {
+        // Remove the user from the activeUsers object
+        delete activeUsers[userId];
+        console.log(`User disconnected: ${userId}`);
+
+        // Emit the updated active users list
+        io.emit("active-users", Object.values(activeUsers));
+      }
     });
   });
 };
