@@ -51,14 +51,23 @@ const handleSocketConnection = (io) => {
 
     socket.on("signal", (data) => {
       if (data.role === "creator") {
-        console.log("Signal Received: ", data);
-        activeStreams.push({
-          userId: data.userId,
-          description: data.description,
-        });
+        const existingStreamIndex = activeStreams.findIndex(
+          (stream) => stream.userId === data.userId
+        );
+
+        if (existingStreamIndex !== -1) {
+          activeStreams[existingStreamIndex].description = data.description;
+        } else {
+          activeStreams.push({
+            userId: data.userId,
+            description: data.description,
+          });
+        }
+
         socket.broadcast.emit("streams", activeStreams);
+      } else {
+        socket.broadcast.emit("signal", data);
       }
-      socket.broadcast.emit("signal", data);
     });
 
     socket.on("disconnect", async () => {
