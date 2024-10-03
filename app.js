@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -8,25 +9,36 @@ const passport = require("passport");
 const path = require("path");
 const { Server } = require("socket.io");
 const http = require("http");
+const { v4: uuidv4 } = require("uuid");
+const { ExpressPeerServer } = require("peer");
+
 dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:4200",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   },
 });
 
+// PeerJS setup
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+  path: "/peerjs",
+});
+app.use(peerServer);
+
+// Use CORS
 app.use(
   cors({
-    origin: "http://localhost:4200",
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   })
 );
 
-//middlewares
+// Middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
@@ -40,7 +52,7 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-//route imports
+// Route imports
 const authRouter = require("./routes/authentication");
 const postRouter = require("./routes/post");
 const followRouter = require("./routes/follow");
@@ -60,19 +72,30 @@ app.use("/user", userRouter);
 app.use("/conversation", conversationRouter);
 app.use("/message", messageRouter);
 
-//initial socket connection
+// WebRTC Room Handling
+app.get("/", (req, res) => {
+  res.redirect(`/${uuidv4()}`); // Generate a unique room ID
+});
+
+app.get("/:room", (req, res) => {
+  // Render a room based on the room ID (adjust to your Angular setup)
+  res.json({ roomId: req.params.room }); // Change this to fit Angular frontend routing
+});
+
+// Initial socket connection
 handleSocketConnection(io);
-//initial connection
+
+// MongoDB connection and server setup
 const port = process.env.PORT || 4000;
 mongoose
   .connect(process.env.MONGODB_URL)
   .then(() => {
-    console.log("mongod db connected successfully");
+    console.log("MongoDB connected successfully");
 
-    server.listen(port, () => {
-      console.log(`Server connected successfully on port ${port}`);
+    server.listen(port, "0.0.0.0", () => {
+      console.log(`Server running on port ${port}`);
     });
   })
   .catch((err) => {
-    console.log("connection error", err);
+    console.log("MongoDB connection error", err);
   });

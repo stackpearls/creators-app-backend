@@ -21,7 +21,7 @@ const getUser = asyncHandler(async (userId) => {
 });
 
 const activeUsers = {};
-const activeStreams = [];
+const activeStreams = {};
 
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
@@ -48,26 +48,11 @@ const handleSocketConnection = (io) => {
         });
       }
     });
+    socket.on("join-room", ({ roomId, peerId }) => {
+      socket.join(roomId);
+      console.log(`User ${peerId} joined room ${roomId}`);
 
-    socket.on("signal", (data) => {
-      if (data.role === "creator") {
-        const existingStreamIndex = activeStreams.findIndex(
-          (stream) => stream.userId === data.userId
-        );
-
-        if (existingStreamIndex !== -1) {
-          activeStreams[existingStreamIndex].description = data.description;
-        } else {
-          activeStreams.push({
-            userId: data.userId,
-            description: data.description,
-          });
-        }
-
-        socket.broadcast.emit("streams", activeStreams);
-      } else {
-        socket.broadcast.emit("signal", data);
-      }
+      socket.to(roomId).emit("user-connected", peerId);
     });
 
     socket.on("disconnect", async () => {
