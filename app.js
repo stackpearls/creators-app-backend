@@ -1,4 +1,3 @@
-// server.js
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -9,7 +8,6 @@ const passport = require("passport");
 const path = require("path");
 const { Server } = require("socket.io");
 const http = require("http");
-const { v4: uuidv4 } = require("uuid");
 const { ExpressPeerServer } = require("peer");
 
 dotenv.config();
@@ -72,16 +70,9 @@ app.use("/user", userRouter);
 app.use("/conversation", conversationRouter);
 app.use("/message", messageRouter);
 
-// WebRTC Room Handling
-app.get("/", (req, res) => {
-  res.redirect(`/${uuidv4()}`); // Generate a unique room ID
+app.get("/test", (req, res) => {
+  res.status(200).json({ message: "Server working fine" });
 });
-
-app.get("/:room", (req, res) => {
-  // Render a room based on the room ID (adjust to your Angular setup)
-  res.json({ roomId: req.params.room }); // Change this to fit Angular frontend routing
-});
-
 // Initial socket connection
 handleSocketConnection(io);
 

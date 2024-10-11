@@ -38,6 +38,7 @@ const getAllMessages = asyncHandler(async (req, res) => {
   const { limit = 4, page = 1 } = req.query;
 
   const messages = await Message.find({ conversationId })
+    .sort({ createdAt: -1 })
     .skip((page - 1) * limit)
     .limit(parseInt(limit));
 

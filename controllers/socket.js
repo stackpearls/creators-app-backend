@@ -51,10 +51,14 @@ const handleSocketConnection = (io) => {
     socket.on("join-room", ({ roomId, peerId }) => {
       socket.join(roomId);
       console.log(`User ${peerId} joined room ${roomId}`);
-
+      activeStreams[roomId] = { room: roomId, peer: peerId };
       socket.to(roomId).emit("user-connected", peerId);
     });
-
+    socket.on("stream-started", ({ roomId, peerId }) => {
+      console.log("Stream is started");
+      activeStreams[roomId] = { room: roomId, peer: peerId };
+      io.emit("active-streams", Object.values(activeStreams));
+    });
     socket.on("disconnect", async () => {
       await removeUser(socket.id);
 
