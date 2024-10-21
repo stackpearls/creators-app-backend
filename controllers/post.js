@@ -21,7 +21,9 @@ const createPost = asyncHandler(async (req, res) => {
   const media = req.files.map((file) => `/uploads/${file.filename}`);
   const newPost = new Post({ description, media, userId });
   await newPost.save();
-  res.status(200).json({ message: "Post added successfully" });
+  res
+    .status(200)
+    .json({ message: "Post added successfully", postId: newPost._id });
 });
 
 const getAllPosts = asyncHandler(async (req, res) => {
@@ -175,4 +177,60 @@ const deletePost = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = { getAllPosts, createPost, deletePost };
+const getSinglePost = asyncHandler(async (req, res) => {
+  const postId = req.params.postId;
+
+  const post = await Post.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(postId), // Match the post by its ID
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $unwind: "$user",
+    },
+    {
+      $project: {
+        "user.password": 0, // Exclude the user's password field
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "postId",
+        as: "likes",
+      },
+    },
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "postId",
+        as: "comments",
+      },
+    },
+    {
+      $addFields: {
+        totalLikes: { $size: "$likes" },
+        totalComments: { $size: "$comments" },
+      },
+    },
+  ]);
+
+  if (!post.length) {
+    return res.status(404).json({ message: "No such post found" });
+  }
+
+  res.status(200).json({ post: post[0] }); // Return the first matching post
+});
+
+module.exports = { getAllPosts, createPost, deletePost, getSinglePost };

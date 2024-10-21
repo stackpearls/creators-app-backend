@@ -53,6 +53,7 @@ app.use(passport.session());
 // Route imports
 const authRouter = require("./routes/authentication");
 const postRouter = require("./routes/post");
+const notificationRouter = require("./routes/notification");
 const followRouter = require("./routes/follow");
 const commentRouter = require("./routes/comment");
 const likeRouter = require("./routes/like");
@@ -69,6 +70,7 @@ app.use("/like", likeRouter);
 app.use("/user", userRouter);
 app.use("/conversation", conversationRouter);
 app.use("/message", messageRouter);
+app.use("/notification", notificationRouter);
 
 app.get("/test", (req, res) => {
   res.status(200).json({ message: "Server working fine" });

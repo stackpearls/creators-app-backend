@@ -1,5 +1,10 @@
 const express = require("express");
-const { getAllPosts, createPost, deletePost } = require("../controllers/post");
+const {
+  getAllPosts,
+  createPost,
+  deletePost,
+  getSinglePost,
+} = require("../controllers/post");
 const { authorizeUser } = require("../middlewares/authorization");
 const upload = require("../middlewares/fileupload");
 const router = express.Router();
@@ -7,5 +12,6 @@ const router = express.Router();
 router.post("/create", authorizeUser, upload.array("files", 10), createPost);
 router.get("/", authorizeUser, getAllPosts);
 router.delete("/delete/:postId", authorizeUser, deletePost);
+router.get("/:postId", authorizeUser, getSinglePost);
 
 module.exports = router;

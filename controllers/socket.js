@@ -1,6 +1,6 @@
 const Socket = require("../models/socket");
 const asyncHandler = require("express-async-handler");
-
+const Notification = require("../models/notification");
 const addUser = asyncHandler(async (userId, name, socketId) => {
   const socketAlreadExists = await Socket.findOne({ userId });
 
@@ -21,7 +21,7 @@ const getUser = asyncHandler(async (userId) => {
 });
 
 const activeUsers = {};
-const activeStreams = {};
+let activeStreams = [];
 
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
@@ -33,7 +33,11 @@ const handleSocketConnection = (io) => {
         socketId: socket.id,
         _id: data.userId,
       };
-      console.log(`User added: ${data.name} with ID: ${data.userId}`);
+      console.log(
+        `User added: ${data.name} with ID: ${data.userId}`,
+        activeUsers
+      );
+
       io.emit("active-users", Object.values(activeUsers));
     });
 
@@ -48,17 +52,56 @@ const handleSocketConnection = (io) => {
         });
       }
     });
-    socket.on("join-room", ({ roomId, peerId }) => {
-      socket.join(roomId);
-      console.log(`User ${peerId} joined room ${roomId}`);
-      activeStreams[roomId] = { room: roomId, peer: peerId };
-      socket.to(roomId).emit("user-connected", peerId);
+    //like post
+    socket.on("post-liked", async (data) => {
+      console.log(data);
+      const { userId, likedBy, contentId } = data;
+      const notification = new Notification({
+        userId,
+        type: "like",
+        contentId: contentId,
+        message: `${likedBy} liked your post `,
+      });
+      await notification.save();
+
+      io.to(userId).emit("notification", notification);
     });
-    socket.on("stream-started", ({ roomId, peerId }) => {
-      console.log("Stream is started");
-      activeStreams[roomId] = { room: roomId, peer: peerId };
-      io.emit("active-streams", Object.values(activeStreams));
+
+    //comment post
+    socket.on("post-comment", async (data) => {
+      console.log(data);
+      const { userId, commentBy, contentId } = data;
+      const notification = new Notification({
+        userId,
+        type: "comment",
+        contentId: contentId,
+        message: `${commentBy} left a comment on your post `,
+      });
+      await notification.save();
+
+      io.to(userId).emit("notification", notification);
     });
+    //stream start
+    socket.on("stream-start", (streamData) => {
+      activeStreams.push(streamData);
+      io.emit("active-streams", activeStreams);
+      console.log("stream emitted: ", activeStreams);
+    });
+    //stream end
+    socket.on("stream-end", (data) => {
+      console.log(data, ":Data");
+      activeStreams = activeStreams.filter(
+        (stream) => stream.channel !== data.channelName
+      );
+      io.emit("active-streams", activeStreams);
+      console.log(
+        "stream ended: ",
+        data.channelName,
+        "Active Streams: ",
+        activeStreams
+      );
+    });
+
     socket.on("disconnect", async () => {
       await removeUser(socket.id);
 
