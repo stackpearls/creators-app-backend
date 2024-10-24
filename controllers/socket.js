@@ -1,6 +1,8 @@
 const Socket = require("../models/socket");
 const asyncHandler = require("express-async-handler");
 const Notification = require("../models/notification");
+const Stream = require("../models/stream");
+const User = require("../models/user");
 const addUser = asyncHandler(async (userId, name, socketId) => {
   const socketAlreadExists = await Socket.findOne({ userId });
 
@@ -20,9 +22,45 @@ const getUser = asyncHandler(async (userId) => {
   return await Socket.findOne({ userId });
 });
 
+const addStream = asyncHandler(async (streamData) => {
+  const stream = new Stream({
+    channel: streamData.channel,
+    userId: streamData.creator._id,
+  });
+  await stream.save();
+});
+
+const deleteStream = asyncHandler(async (stream) => {
+  await Stream.findOneAndDelete({ channel: stream.channelName });
+});
 const activeUsers = {};
 let activeStreams = [];
 
+async function activateUser(userId) {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { active: true },
+      { new: true }
+    );
+    console.log("User activated:");
+  } catch (error) {
+    console.error("Error activating user:", error);
+  }
+}
+
+async function deactivateUser(userId) {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { active: false },
+      { new: true }
+    );
+    console.log("User deactivate:");
+  } catch (error) {
+    console.error("Error activating user:", error);
+  }
+}
 const handleSocketConnection = (io) => {
   io.on("connection", (socket) => {
     console.log("new user connected", socket.id);
@@ -33,12 +71,11 @@ const handleSocketConnection = (io) => {
         socketId: socket.id,
         _id: data.userId,
       };
-      console.log(
-        `User added: ${data.name} with ID: ${data.userId}`,
-        activeUsers
-      );
+      console.log(`User added: ${data.name} with ID: ${data.userId}`);
 
-      io.emit("active-users", Object.values(activeUsers));
+      activateUser(data.userId);
+
+      io.emit("user-activated", data.userId);
     });
 
     socket.on("sendMessage", async (data) => {
@@ -84,7 +121,10 @@ const handleSocketConnection = (io) => {
     //stream start
     socket.on("stream-start", (streamData) => {
       activeStreams.push(streamData);
-      io.emit("active-streams", activeStreams);
+      addStream(streamData);
+      // io.emit("active-streams", activeStreams);
+      io.emit("stream-started", streamData);
+
       console.log("stream emitted: ", activeStreams);
     });
     //stream end
@@ -93,7 +133,8 @@ const handleSocketConnection = (io) => {
       activeStreams = activeStreams.filter(
         (stream) => stream.channel !== data.channelName
       );
-      io.emit("active-streams", activeStreams);
+      deleteStream(data);
+      io.emit("stream-ended", data);
       console.log(
         "stream ended: ",
         data.channelName,
@@ -108,12 +149,12 @@ const handleSocketConnection = (io) => {
       const userId = Object.keys(activeUsers).find(
         (key) => activeUsers[key].socketId === socket.id
       );
-
+      deactivateUser(userId);
       if (userId) {
         delete activeUsers[userId];
         console.log(`User disconnected: ${userId}`);
 
-        io.emit("active-users", Object.values(activeUsers));
+        io.emit("user-deactivated", userId);
       }
     });
   });

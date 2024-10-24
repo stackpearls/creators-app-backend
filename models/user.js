@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema({
   google_id: { type: String },
   facebook_id: { type: String },
   location: { type: String },
+  active: { type: Boolean, default: false },
   bio: { type: String },
   role: {
     type: String,

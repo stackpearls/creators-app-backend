@@ -8,7 +8,6 @@ const passport = require("passport");
 const path = require("path");
 const { Server } = require("socket.io");
 const http = require("http");
-const { ExpressPeerServer } = require("peer");
 
 dotenv.config();
 
@@ -20,13 +19,6 @@ const io = new Server(server, {
     credentials: true,
   },
 });
-
-// PeerJS setup
-const peerServer = ExpressPeerServer(server, {
-  debug: true,
-  path: "/peerjs",
-});
-app.use(peerServer);
 
 // Use CORS
 app.use(
@@ -60,6 +52,7 @@ const likeRouter = require("./routes/like");
 const userRouter = require("./routes/user");
 const conversationRouter = require("./routes/conversation");
 const messageRouter = require("./routes/message");
+const streamRouter = require("./routes/stream");
 const { handleSocketConnection } = require("./controllers/socket");
 
 app.use("/", authRouter);
@@ -71,10 +64,8 @@ app.use("/user", userRouter);
 app.use("/conversation", conversationRouter);
 app.use("/message", messageRouter);
 app.use("/notification", notificationRouter);
+app.use("/streams", streamRouter);
 
-app.get("/test", (req, res) => {
-  res.status(200).json({ message: "Server working fine" });
-});
 // Initial socket connection
 handleSocketConnection(io);
 

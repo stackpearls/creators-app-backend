@@ -9,7 +9,7 @@ const getAllConversations = asyncHandler(async (req, res) => {
 
   const conversations = await Conversation.find({
     members: { $in: [userId] },
-  }).populate("members", "name _id profile username");
+  }).populate("members", "name _id profile username active");
   if (conversations) {
     res.status(200).json({ conversations });
   } else {

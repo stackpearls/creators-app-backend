@@ -2,8 +2,6 @@ const asyncHandler = require("express-async-handler");
 const Notification = require("../models/notification");
 
 const getNotifications = asyncHandler(async (req, res) => {
-  console.log("here");
-
   const notification = await Notification.find({
     userId: req.params.userId,
   }).sort({ timestamp: -1 });
