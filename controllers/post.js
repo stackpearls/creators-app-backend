@@ -20,10 +20,18 @@ const createPost = asyncHandler(async (req, res) => {
   }
   const media = req.files.map((file) => `/uploads/${file.filename}`);
   const newPost = new Post({ description, media, userId });
-  await newPost.save();
-  res
-    .status(200)
-    .json({ message: "Post added successfully", postId: newPost._id });
+  try {
+    await Promise.all([
+      newPost.save(),
+      User.findByIdAndUpdate(userId, { $inc: { totalPosts: 1 } }),
+    ]);
+    res
+      .status(200)
+      .json({ message: "Post added successfully", postId: newPost._id });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 const getAllPosts = asyncHandler(async (req, res) => {
@@ -157,10 +165,15 @@ const deletePost = asyncHandler(async (req, res) => {
         }
       });
     });
-
+    const likeCount = await Like.countDocuments({ postId });
     await Like.deleteMany({ postId }, { session });
 
     await Comment.deleteMany({ postId }, { session });
+    await User.findByIdAndUpdate(
+      deletedPost.userId,
+      { $inc: { totalLikes: -likeCount, totalPosts: -1 } },
+      { session }
+    );
 
     await session.commitTransaction();
     session.endSession();

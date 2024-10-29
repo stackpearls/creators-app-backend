@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 const getUsers = asyncHandler(async (req, res) => {
+  console.log("Here ");
   const { _id: userId } = req.user;
   const currentUser = await User.findById(userId).select("following");
   const page = parseInt(req.query.page) || 1;

@@ -13,6 +13,8 @@ const userSchema = new mongoose.Schema({
   location: { type: String },
   active: { type: Boolean, default: false },
   bio: { type: String },
+  totalLikes: { type: Number, default: 0 },
+  totalPosts: { type: Number, default: 0 },
   role: {
     type: String,
     enum: ["creator", "subscriber"],

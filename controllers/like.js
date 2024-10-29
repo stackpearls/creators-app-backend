@@ -1,11 +1,11 @@
 const asyncHandler = require("express-async-handler");
-
+const User = require("../models/user");
 const Like = require("../models/like");
 const Post = require("../models/post");
 
 //add like
 const addLike = asyncHandler(async (req, res) => {
-  const { postId } = req.body;
+  const { postId, postUID } = req.body;
   const { _id: userId } = req.user;
 
   const likeExists = await Like.findOne({ userId, postId });
@@ -20,14 +20,22 @@ const addLike = asyncHandler(async (req, res) => {
     userId: userId,
   });
 
-  newLike.save();
+  try {
+    await Promise.all([
+      newLike.save(),
+      User.findByIdAndUpdate(postUID, { $inc: { totalLikes: 1 } }),
+    ]);
 
-  res.status(200).json({ message: "Like is added" });
+    res.status(200).json({ message: "Like is added" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 //delete like
 const deleteLike = asyncHandler(async (req, res) => {
-  const { postId } = req.body;
+  const { postId, postUID } = req.body;
   const { _id: userId } = req.user;
 
   const likeExists = await Like.findOne({ postId, userId });
@@ -37,9 +45,17 @@ const deleteLike = asyncHandler(async (req, res) => {
     throw new Error("Like does not exists");
   }
 
-  await Like.findByIdAndDelete(likeExists._id);
+  try {
+    await Promise.all([
+      Like.findByIdAndDelete(likeExists._id),
+      User.findByIdAndUpdate(postUID, { $inc: { totalLikes: -1 } }),
+    ]);
 
-  res.status(200).json({ message: "Like is deleted" });
+    res.status(200).json({ message: "Like is deleted" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
 });
 
 module.exports = { addLike, deleteLike };
