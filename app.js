@@ -8,6 +8,7 @@ const passport = require("passport");
 const path = require("path");
 const { Server } = require("socket.io");
 const http = require("http");
+const User = require("./models/user");
 
 dotenv.config();
 

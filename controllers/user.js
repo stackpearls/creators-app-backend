@@ -132,5 +132,31 @@ const updateUser = asyncHandler(async (req, res) => {
     res.status(404).json({ message: "User not found" });
   }
 });
+const searchUsers = asyncHandler(async (req, res) => {
+  const { query } = req.query; // Get the search query from query parameters
 
-module.exports = { getUsers, deleteUser, updateUser, getFollowingUsers };
+  if (!query) {
+    return res.status(400).json({ message: "Query cannot be empty." });
+  }
+
+  // Use a regular expression to perform a case-insensitive search
+  const regex = new RegExp(`${query}`, "i");
+  console.log("Generated Regex:", regex);
+
+  // Search only by username
+  const users = await User.find({
+    name: { $regex: regex }, // Search only by username
+  })
+    .select("-password -__v") // Exclude sensitive information like password
+    .limit(10); // Limit results for performance
+
+  return res.status(200).json(users);
+});
+
+module.exports = {
+  getUsers,
+  deleteUser,
+  updateUser,
+  getFollowingUsers,
+  searchUsers,
+};

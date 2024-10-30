@@ -35,27 +35,38 @@ const createPost = asyncHandler(async (req, res) => {
 });
 
 const getAllPosts = asyncHandler(async (req, res) => {
-  const { following } = req.body;
+  const following = req.params.following;
+
   const { _id: userId } = req.user;
 
-  if (following && Array.isArray(following) && following.length > 0) {
+  if (following === "true") {
+    const user = await User.findById(userId).select("following");
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
     const posts = await Post.aggregate([
       {
         $match: {
-          userId: {
-            $in: following.map((id) => new mongoose.Types.ObjectId(id)),
-          },
+          userId: { $in: user.following }, // Only posts from followed users
         },
       },
-
-      // {
-      //   $lookup: {
-      //     from: "comments",
-      //     localField: "_id",
-      //     foreignField: "postId",
-      //     as: "comments",
-      //   },
-      // },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user",
+      },
+      {
+        $project: {
+          "user.password": 0, // Exclude sensitive information
+        },
+      },
       {
         $lookup: {
           from: "likes",
@@ -65,14 +76,29 @@ const getAllPosts = asyncHandler(async (req, res) => {
         },
       },
       {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
+        $addFields: {
+          totalLikes: { $size: "$likes" },
+          totalComments: { $size: "$comments" },
+        },
+      },
+      {
         $sort: {
           createdAt: -1,
         },
       },
     ]);
-
-    res.status(200).json(posts);
-  } else {
+    return res.status(200).json(posts);
+  }
+  if (following === "false") {
+    console.log("Inside Following === false");
     const userExists = await User.findById(userId);
 
     if (!userExists) {

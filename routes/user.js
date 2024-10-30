@@ -5,12 +5,14 @@ const {
   deleteUser,
   updateUser,
   getFollowingUsers,
+  searchUsers,
 } = require("../controllers/user");
 const upload = require("../middlewares/fileupload");
 const router = express.Router();
 
 router.get("/", authorizeUser, getUsers);
 router.get("/following", authorizeUser, getFollowingUsers);
+router.get("/search", authorizeUser, searchUsers);
 
 router.delete("/delete", authorizeUser, deleteUser);
 router.patch(

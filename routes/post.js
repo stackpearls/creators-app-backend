@@ -10,7 +10,7 @@ const upload = require("../middlewares/fileupload");
 const router = express.Router();
 
 router.post("/create", authorizeUser, upload.array("files", 10), createPost);
-router.get("/", authorizeUser, getAllPosts);
+router.get("/:following", authorizeUser, getAllPosts);
 router.delete("/delete/:postId", authorizeUser, deletePost);
 router.get("/:postId", authorizeUser, getSinglePost);
 
