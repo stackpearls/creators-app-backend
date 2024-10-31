@@ -160,6 +160,69 @@ const getAllPosts = asyncHandler(async (req, res) => {
     res.status(200).json(posts);
   }
 });
+const getSingleUserPost = asyncHandler(async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.params.userId);
+  console.log(userId, "Type is: ", typeof userId);
+  const userExists = await User.findById(userId);
+
+  if (!userExists) {
+    return res.status(404).json({ message: "No user found" });
+  }
+
+  const posts = await Post.aggregate([
+    {
+      $match: {
+        userId: userId,
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $unwind: "$user",
+    },
+    {
+      $project: {
+        "user.password": 0,
+      },
+    },
+
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "postId",
+        as: "likes",
+      },
+    },
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "postId",
+        as: "comments",
+      },
+    },
+    {
+      $addFields: {
+        totalLikes: { $size: "$likes" },
+        totalComments: { $size: "$comments" },
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+  ]);
+
+  return res.status(200).json(posts);
+});
 
 const deletePost = asyncHandler(async (req, res) => {
   const postId = req.params.postId;
@@ -272,4 +335,10 @@ const getSinglePost = asyncHandler(async (req, res) => {
   res.status(200).json({ post: post[0] }); // Return the first matching post
 });
 
-module.exports = { getAllPosts, createPost, deletePost, getSinglePost };
+module.exports = {
+  getAllPosts,
+  createPost,
+  deletePost,
+  getSinglePost,
+  getSingleUserPost,
+};

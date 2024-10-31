@@ -3,7 +3,7 @@ const User = require("../models/user");
 const post = require("../models/post");
 const fs = require("fs");
 const path = require("path");
-
+const mongoose = require("mongoose");
 const getUsers = asyncHandler(async (req, res) => {
   console.log("Here ");
   const { _id: userId } = req.user;
@@ -34,6 +34,40 @@ const getUsers = asyncHandler(async (req, res) => {
     currentPage: page,
     totalPages: Math.ceil(totalUsers / limit),
     totalUsers,
+  });
+});
+const getSingleUser = asyncHandler(async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.params.userId);
+  const user = await User.findById(userId).select([
+    "-password",
+    "-google_id",
+    "-facebook_id",
+    "-email",
+  ]);
+
+  if (!user) {
+    return res.status(404).json({ message: "No such user found" });
+  }
+  res.status(200).json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    username: user.username,
+    profile: user.profile,
+    coverImage: user.coverImage,
+    age: user.age,
+    gender: user.gender,
+    role: user.role,
+    bio: user.bio,
+    location: user.location,
+    totalLikes: user.totalLikes,
+    totalPosts: user.totalPosts,
+    createdAt:
+      user.createdAt.getDate() +
+      "-" +
+      user.createdAt.getMonth() +
+      "-" +
+      user.createdAt.getFullYear(),
   });
 });
 const getFollowingUsers = asyncHandler(async (req, res) => {
@@ -159,4 +193,5 @@ module.exports = {
   updateUser,
   getFollowingUsers,
   searchUsers,
+  getSingleUser,
 };

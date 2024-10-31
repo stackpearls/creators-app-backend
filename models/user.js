@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   profile: { type: String, default: "/uploads/default_profile_picture.png" },
-  coverImage: { type: String },
+  coverImage: { type: String, default: "/uploads/default_cover_picture.jpg" },
   google_id: { type: String },
   facebook_id: { type: String },
   location: { type: String },

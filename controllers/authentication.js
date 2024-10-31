@@ -102,6 +102,8 @@ const loginUser = asyncHandler(async (req, res) => {
       token: generateToken(user._id, user.role, "2h"),
       bio: user.bio,
       location: user.location,
+      totalLikes: user.totalLikes,
+      totalPosts: user.totalPosts,
       createdAt:
         user.createdAt.getDate() +
         "-" +
@@ -141,6 +143,8 @@ const loginUser = asyncHandler(async (req, res) => {
           coverImage: user.coverImage,
           age: user.age,
           location: user.location,
+          totalLikes: user.totalLikes,
+          totalPosts: user.totalPosts,
           gender: user.gender,
           role: user.role,
           following: user.following,

@@ -6,11 +6,13 @@ const {
   updateUser,
   getFollowingUsers,
   searchUsers,
+  getSingleUser,
 } = require("../controllers/user");
 const upload = require("../middlewares/fileupload");
 const router = express.Router();
 
 router.get("/", authorizeUser, getUsers);
+router.get("/getSingleUser/:userId", authorizeUser, getSingleUser);
 router.get("/following", authorizeUser, getFollowingUsers);
 router.get("/search", authorizeUser, searchUsers);
 
