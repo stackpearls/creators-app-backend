@@ -9,6 +9,7 @@ const notificationSchema = new mongoose.Schema({
   },
   contentId: { type: mongoose.Schema.Types.ObjectId, required: true },
   message: { type: String, required: true },
+  mediaUrl: { type: String }, // Add mediaUrl to store the first image URL if available
   read: { type: Boolean, default: false },
   timestamp: { type: Date, default: Date.now },
 });

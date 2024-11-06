@@ -35,12 +35,10 @@ const sendMessage = asyncHandler(async (req, res) => {
 //get all messages
 const getAllMessages = asyncHandler(async (req, res) => {
   const conversationId = req.params.conversationId;
-  const { limit = 4, page = 1 } = req.query;
 
-  const messages = await Message.find({ conversationId })
-    .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(parseInt(limit));
+  const messages = await Message.find({ conversationId }).sort({
+    createdAt: 1,
+  });
 
   if (!messages || messages.length === 0) {
     return res

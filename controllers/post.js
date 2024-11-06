@@ -161,6 +161,7 @@ const getAllPosts = asyncHandler(async (req, res) => {
   }
 });
 const getSingleUserPost = asyncHandler(async (req, res) => {
+  console.log("here");
   const userId = new mongoose.Types.ObjectId(req.params.userId);
   console.log(userId, "Type is: ", typeof userId);
   const userExists = await User.findById(userId);

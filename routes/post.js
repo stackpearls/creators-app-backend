@@ -14,6 +14,6 @@ router.post("/create", authorizeUser, upload.array("files", 10), createPost);
 router.get("/:following", authorizeUser, getAllPosts);
 router.get("/getIndividualPosts/:userId", authorizeUser, getSingleUserPost);
 router.delete("/delete/:postId", authorizeUser, deletePost);
-router.get("/:postId", authorizeUser, getSinglePost);
+router.get("/getSinglePost/:postId", authorizeUser, getSinglePost);
 
 module.exports = router;

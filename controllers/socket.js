@@ -91,17 +91,32 @@ const handleSocketConnection = (io) => {
     });
     //like post
     socket.on("post-liked", async (data) => {
-      console.log(data);
-      const { userId, likedBy, contentId } = data;
+      console.log("Post liked socket");
+
+      const { userId, likedBy, contentId, mediaUrl } = data;
+
+      // Create the notification object
       const notification = new Notification({
-        userId,
+        userId, // This is the user receiving the notification (post owner)
         type: "like",
         contentId: contentId,
-        message: `${likedBy} liked your post `,
+        message: `${likedBy} liked your post`,
+        mediaUrl: mediaUrl, // Add mediaUrl to the notification data
       });
+
+      // Save the notification to the database
       await notification.save();
 
-      io.to(userId).emit("notification", notification);
+      // Get the socket ID of the user who owns the post
+      const receiver = await getUser(userId); // Fetch the user who owns the post
+
+      if (receiver) {
+        // Emit the notification to the specific user
+        io.to(receiver.socketId).emit("notification", notification);
+        console.log(`Notification sent to user ${userId}`);
+      } else {
+        console.log("Receiver not found for notification");
+      }
     });
 
     //comment post
