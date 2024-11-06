@@ -119,20 +119,48 @@ const handleSocketConnection = (io) => {
       }
     });
 
-    //comment post
     socket.on("post-comment", async (data) => {
-      console.log(data);
-      const { userId, commentBy, contentId } = data;
+      console.log("Post comment socket");
+
+      const { userId, commentBy, contentId, mediaUrl } = data;
+
+      // Create the notification object
       const notification = new Notification({
-        userId,
+        userId, // This is the user receiving the notification (post owner)
         type: "comment",
         contentId: contentId,
         message: `${commentBy} left a comment on your post `,
+        mediaUrl: mediaUrl, // Add mediaUrl to the notification data
       });
+
+      // Save the notification to the database
       await notification.save();
 
-      io.to(userId).emit("notification", notification);
+      // Get the socket ID of the user who owns the post
+      const receiver = await getUser(userId); // Fetch the user who owns the post
+
+      if (receiver) {
+        // Emit the notification to the specific user
+        io.to(receiver.socketId).emit("notification", notification);
+        console.log(`Notification sent to user ${userId}`);
+      } else {
+        console.log("Receiver not found for notification");
+      }
     });
+    //comment post
+    // socket.on("post-comment", async (data) => {
+    //   console.log(data);
+    //   const { userId, commentBy, contentId } = data;
+    //   const notification = new Notification({
+    //     userId,
+    //     type: "comment",
+    //     contentId: contentId,
+    //     message: `${commentBy} left a comment on your post `,
+    //   });
+    //   await notification.save();
+
+    //   io.to(userId).emit("notification", notification);
+    // });
     //stream start
     socket.on("stream-start", (streamData) => {
       activeStreams.push(streamData);
