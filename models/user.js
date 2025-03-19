@@ -42,6 +42,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  priceID: { type: String },
 });
 
 userSchema.pre("save", async function (next) {

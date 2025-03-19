@@ -5,6 +5,7 @@ const postSchema = new mongoose.Schema({
   media: { type: [String], required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, required: true, ref: "User" },
   createdAt: { type: Date, default: Date.now },
+  tier: { type: String, enum: ["free", "paid"], default: "free" },
 });
 
 module.exports = mongoose.model("Post", postSchema);

@@ -9,7 +9,8 @@ const path = require("path");
 const { Server } = require("socket.io");
 const http = require("http");
 const User = require("./models/user");
-
+const bodyParser = require("body-parser");
+const fetchWebhook = require("./controllers/webhook");
 dotenv.config();
 
 const app = express();
@@ -30,6 +31,11 @@ app.use(
 );
 
 // Middlewares
+app.use(
+  "/webhook",
+  express.raw({ type: "application/json" }), // This middleware must come before anything else
+  fetchWebhook // Your webhook controller
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use("/uploads", express.static(path.join(__dirname, "/uploads")));
@@ -54,6 +60,7 @@ const userRouter = require("./routes/user");
 const conversationRouter = require("./routes/conversation");
 const messageRouter = require("./routes/message");
 const streamRouter = require("./routes/stream");
+const stripeRouter = require("./routes/stripe");
 const { handleSocketConnection } = require("./controllers/socket");
 
 app.use("/", authRouter);
@@ -66,6 +73,7 @@ app.use("/conversation", conversationRouter);
 app.use("/message", messageRouter);
 app.use("/notification", notificationRouter);
 app.use("/streams", streamRouter);
+app.use("/stripe", stripeRouter);
 
 // Initial socket connection
 handleSocketConnection(io);

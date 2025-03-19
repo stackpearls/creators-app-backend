@@ -166,7 +166,7 @@ const handleSocketConnection = (io) => {
       activeStreams.push(streamData);
       addStream(streamData);
       // io.emit("active-streams", activeStreams);
-      io.emit("stream-started", streamData);
+      socket.broadcast.emit("stream-started", streamData);
 
       console.log("stream emitted: ", activeStreams);
     });
@@ -177,7 +177,7 @@ const handleSocketConnection = (io) => {
         (stream) => stream.channel !== data.channelName
       );
       deleteStream(data);
-      io.emit("stream-ended", data);
+      socket.broadcast.emit("stream-ended", data);
       console.log(
         "stream ended: ",
         data.channelName,

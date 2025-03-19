@@ -6,11 +6,13 @@ const User = require("../models/user");
 const mongoose = require("mongoose");
 const fs = require("fs");
 const path = require("path");
+const Subscription = require("../models/subscription");
 
 //create post
 const createPost = asyncHandler(async (req, res) => {
   console.log(req.body);
-  const { description } = req.body;
+  const { description, tier } = req.body;
+
   const { id: userId } = req.user;
 
   if (!req.files || req.files.length === 0) {
@@ -18,8 +20,9 @@ const createPost = asyncHandler(async (req, res) => {
       .status(400)
       .json({ message: "Please attach at least one image" });
   }
+
   const media = req.files.map((file) => `/uploads/${file.filename}`);
-  const newPost = new Post({ description, media, userId });
+  const newPost = new Post({ description, media, userId, tier });
   try {
     await Promise.all([
       newPost.save(),
@@ -224,6 +227,77 @@ const getSingleUserPost = asyncHandler(async (req, res) => {
   return res.status(200).json(posts);
 });
 
+const getSingleUserPostsWithSubscription = asyncHandler(async (req, res) => {
+  const userId = new mongoose.Types.ObjectId(req.params.userId); // Creator's userId
+  const requestingUserId = req.user._id; // ID of the user making the request (assume it's attached to req.user)
+
+  // Check if the requesting user is subscribed to the creator
+  const isSubscribed = await Subscription.findOne({
+    buyerId: requestingUserId,
+    creatorId: userId,
+    status: "active",
+  });
+
+  // Set a filter based on subscription status
+  const postFilter = {
+    userId: userId,
+    ...(isSubscribed ? {} : { tier: "free" }), // If not subscribed, only fetch "free" posts
+  };
+
+  // Fetch posts based on the filter
+  const posts = await Post.aggregate([
+    {
+      $match: postFilter,
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "userId",
+        foreignField: "_id",
+        as: "user",
+      },
+    },
+    {
+      $unwind: "$user",
+    },
+    {
+      $project: {
+        "user.password": 0,
+      },
+    },
+    {
+      $lookup: {
+        from: "likes",
+        localField: "_id",
+        foreignField: "postId",
+        as: "likes",
+      },
+    },
+    {
+      $lookup: {
+        from: "comments",
+        localField: "_id",
+        foreignField: "postId",
+        as: "comments",
+      },
+    },
+    {
+      $addFields: {
+        totalLikes: { $size: "$likes" },
+        totalComments: { $size: "$comments" },
+      },
+    },
+    {
+      $sort: {
+        createdAt: -1,
+      },
+    },
+  ]);
+
+  // Respond with posts and subscription status
+  return res.status(200).json(posts);
+});
+
 const deletePost = asyncHandler(async (req, res) => {
   const postId = req.params.postId;
 
@@ -340,5 +414,5 @@ module.exports = {
   createPost,
   deletePost,
   getSinglePost,
-  getSingleUserPost,
+  getSingleUserPostsWithSubscription,
 };

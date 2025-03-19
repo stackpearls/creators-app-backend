@@ -59,6 +59,7 @@ const getSingleUser = asyncHandler(async (req, res) => {
     gender: user.gender,
     role: user.role,
     bio: user.bio,
+    priceID: user.priceID,
     location: user.location,
     totalLikes: user.totalLikes,
     totalPosts: user.totalPosts,
@@ -179,7 +180,8 @@ const searchUsers = asyncHandler(async (req, res) => {
 
   // Search only by username
   const users = await User.find({
-    name: { $regex: regex }, // Search only by username
+    name: { $regex: regex },
+    role: "creator",
   })
     .select("-password -__v") // Exclude sensitive information like password
     .limit(10); // Limit results for performance
