@@ -5,11 +5,13 @@ const {
   deletePost,
   getSinglePost,
   getSingleUserPostsWithSubscription,
+    getUserPosts
 } = require("../controllers/post");
 const { authorizeUser } = require("../middlewares/authorization");
 const upload = require("../middlewares/fileupload");
 const router = express.Router();
 
+router.get('getUserPosts/:id', authorizeUser, getUserPosts);
 router.post("/create", authorizeUser, upload.array("files", 10), createPost);
 router.get("/:following", authorizeUser, getAllPosts);
 router.get(

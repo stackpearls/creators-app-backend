@@ -7,6 +7,8 @@ const {
   getFollowingUsers,
   searchUsers,
   getSingleUser,
+    requestForCreator,
+    creatorVerificationApproved
 } = require("../controllers/user");
 const upload = require("../middlewares/fileupload");
 const router = express.Router();
@@ -26,5 +28,14 @@ router.patch(
   ]),
   updateUser
 );
+
+router.patch("/requestForCreator/:id", authorizeUser, upload.fields([
+    { name: 'file1', maxCount: 1 },
+    { name: 'file2', maxCount: 1 },
+    { name: 'file3', maxCount: 1 },
+    { name: 'file4', maxCount: 1 }
+]), requestForCreator);
+
+router.get("/creatorVerificationApproved/:verificationToken/:status", creatorVerificationApproved)
 
 module.exports = router;

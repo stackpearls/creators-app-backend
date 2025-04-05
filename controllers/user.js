@@ -4,6 +4,10 @@ const post = require("../models/post");
 const fs = require("fs");
 const path = require("path");
 const mongoose = require("mongoose");
+const { v4: uuidv4 } = require('uuid');
+const sendEmail = require("../configurations/sendEmail");
+const generateEmailHTML = require("../templates/emailTemplate").generateEmailHTML;
+
 const getUsers = asyncHandler(async (req, res) => {
   console.log("Here ");
   const { _id: userId } = req.user;
@@ -63,6 +67,9 @@ const getSingleUser = asyncHandler(async (req, res) => {
     location: user.location,
     totalLikes: user.totalLikes,
     totalPosts: user.totalPosts,
+    creator: user.creator,
+    attachmentsForCreator: user.attachmentsForCreator,
+    creatorVerificationStatus: user.creatorVerificationStatus,
     createdAt:
       user.createdAt.getDate() +
       "-" +
@@ -189,6 +196,63 @@ const searchUsers = asyncHandler(async (req, res) => {
   return res.status(200).json(users);
 });
 
+const requestForCreator = asyncHandler(async (req, res) => {
+  const creator = uuidv4('', '', '');
+  const attachmentsForCreator = [];
+
+  for (let keys of Object.keys(req.files)) {
+    attachmentsForCreator.push({
+      name: `/uploads/${req.files[keys][0].filename}`,
+      originalName: req.files[keys][0].originalname,
+      size: req.files[keys][0].size
+    });
+  }
+
+  const userUpdated = await User.findByIdAndUpdate(req.params.id,  {creator, attachmentsForCreator, creatorVerificationStatus: 'PENDING'}, {
+    new: true,
+  });
+
+  if (userUpdated) {
+    res.status(200).json({'message': 'Request for creator has been sent to admin for verification'});
+    await sendEmail(
+        'farhaniftikhar16f16@gmail.com',
+        `Request To Verify ${userUpdated.name} As Creator`,
+        null,
+        generateEmailHTML(attachmentsForCreator, userUpdated));
+  } else {
+    res.status(404).json({ message: 'User not found' });
+  }
+});
+
+const creatorVerificationApproved = asyncHandler(async (req, res) => {
+  const userVerified = await User.findOne({creator: req.params.verificationToken, creatorVerificationStatus: 'VERIFIED'});
+
+  if (userVerified) {
+    res.status(400).json({ message: `${userVerified.name} is already verified and a creator`});
+    return;
+  }
+
+  if (!userVerified && req.params.status === 'rejected') {
+    const user =  await User.findOneAndUpdate({creator: req.params.verificationToken}, {creatorVerificationStatus: 'REJECTED'}, {
+      new: true,
+    })
+    res.status(200).json({message: `${user.name} request for creator has been rejected`});
+    return;
+  }
+
+  if (!userVerified && req.params.status === 'verified') {
+    const user =  await User.findOneAndUpdate({creator: req.params.verificationToken},  {creatorVerificationStatus: 'VERIFIED', role: 'creator'}, {
+      new: true,
+    });
+
+    res.status(200).json({message: `${user.name} has been successfully verified and becomes a creator`});
+    return;
+  }
+
+  res.status(404).json({ message: 'User not found' });
+});
+
+
 module.exports = {
   getUsers,
   deleteUser,
@@ -196,4 +260,6 @@ module.exports = {
   getFollowingUsers,
   searchUsers,
   getSingleUser,
+  requestForCreator,
+  creatorVerificationApproved
 };
