@@ -104,6 +104,9 @@ const loginUser = asyncHandler(async (req, res) => {
       location: user.location,
       totalLikes: user.totalLikes,
       totalPosts: user.totalPosts,
+      creator: user.creator,
+      attachmentsForCreator: user.attachmentsForCreator,
+      creatorVerificationStatus: user.creatorVerificationStatus,
       createdAt:
         user.createdAt.getDate() +
         "-" +
@@ -150,6 +153,9 @@ const loginUser = asyncHandler(async (req, res) => {
           following: user.following,
           token: generateToken(user._id, user.role, "2h"),
           createdAt: user.createdAt,
+          creator: user.creator,
+          attachmentsForCreator: user.attachmentsForCreator,
+          creatorVerificationStatus: user.creatorVerificationStatus
         });
       } else {
         res.status(400).json({ message: "Please check your credentials" });

@@ -43,6 +43,13 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
   priceID: { type: String },
+  creator: { type: String },
+  attachmentsForCreator: [{ name: {type: String}, originalName: {type: String}, size: {type: Number}} ],
+  creatorVerificationStatus: {
+    type: String,
+    enum: ["VERIFIED", "NOT_VERIFIED", "REJECTED"],
+    default: "NOT_VERIFIED",
+  }
 });
 
 userSchema.pre("save", async function (next) {

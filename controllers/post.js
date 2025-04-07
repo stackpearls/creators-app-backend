@@ -409,10 +409,81 @@ const getSinglePost = asyncHandler(async (req, res) => {
   res.status(200).json({ post: post[0] }); // Return the first matching post
 });
 
+const getUserPosts = asyncHandler(async (req, res) => {
+  if (req.params.id) {
+
+    const loggedInUser = await User.findById(req.params.id, null, null).then();
+
+    let subscribedUsers = [];
+    let unsubscribedUsers = [];
+
+    for (let id of loggedInUser.following) {
+      const subscription = await Subscription.findOne({
+        buyerId: req.params.id,
+        creatorId: id,
+        status: "active",
+      }, null, null);
+
+      subscription ? subscribedUsers.push(id) : unsubscribedUsers.push(id);
+    }
+
+    const postFilter = subscribedUsers.length > 0
+      ? {
+        $or: [
+          { userId: { $in: subscribedUsers } },
+          { userId: { $in: unsubscribedUsers }, tier: "free" },
+        ],
+      }
+      : { userId: { $in: loggedInUser.following }, tier: "free" };
+
+    const posts = await Post.aggregate([
+      { $match: postFilter },
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      { $unwind: "$user" },
+      { $project: { "user.password": 0 } },
+      {
+        $lookup: {
+          from: "likes",
+          localField: "_id",
+          foreignField: "postId",
+          as: "likes",
+        },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "postId",
+          as: "comments",
+        },
+      },
+      {
+        $addFields: {
+          totalLikes: { $size: "$likes" },
+          totalComments: { $size: "$comments" },
+        },
+      },
+      { $sort: { createdAt: -1 } }, // Sort by latest posts
+    ]);
+
+    return res.status(200).json(posts);
+  }
+
+  return res.status(200).json([]);
+});
+
 module.exports = {
   getAllPosts,
   createPost,
   deletePost,
   getSinglePost,
   getSingleUserPostsWithSubscription,
+  getUserPosts
 };
