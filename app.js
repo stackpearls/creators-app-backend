@@ -17,7 +17,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: [process.env.FRONTEND_URL, "http://localhost:4200"],
     credentials: true,
   },
 });
@@ -25,7 +25,7 @@ const io = new Server(server, {
 // Use CORS
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
+    origin: [process.env.FRONTEND_URL, "http://localhost:4200"],
     credentials: true,
   })
 );

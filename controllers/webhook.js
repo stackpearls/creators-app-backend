@@ -6,8 +6,6 @@ const endpointSecret = process.env.WEBHOOK_SECRET;
 const Stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 const fetechWebhook = asyncHandler(async (req, res) => {
-  console.log("here is the webhook called", endpointSecret);
-
   const sig = req.headers["stripe-signature"];
   let event;
 
@@ -42,18 +40,24 @@ const fetechWebhook = asyncHandler(async (req, res) => {
       });
 
       await newSubscription.save();
-      console.log("Subscription saved to DB:", newSubscription);
     } catch (error) {
       console.error("Error saving subscription:", error.message);
     }
   }
 
-  if (event.type === "customer.subscription.updated") {
+  if (
+    event.type === "customer.subscription.deleted" ||
+    event.type === "customer.subscription.updated"
+  ) {
     const subscription = event.data.object;
-    console.log(subscription);
+
     try {
       // Check if subscription status is "canceled" or "expired"
-      if (subscription.status === "canceled") {
+      if (
+        ["canceled", "incomplete_expired", "unpaid"].includes(
+          subscription.status
+        )
+      ) {
         // Find the corresponding subscription in the database
         const dbSubscription = await Subscription.findOne({
           subscriptionId: subscription.id,

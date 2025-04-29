@@ -13,8 +13,9 @@ const subscriptionSchema = new mongoose.Schema({
   },
   priceId: { type: String, required: true },
   subscriptionId: { type: String, required: true },
-  status: { type: String, required: true }, // e.g., "active", "canceled"
+  status: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  subscriptionEndDate: { type: Date },
 });
 
 module.exports = mongoose.model("Subscription", subscriptionSchema);
