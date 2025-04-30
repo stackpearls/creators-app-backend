@@ -241,7 +241,7 @@ const getSingleUserPostsWithSubscription = asyncHandler(async (req, res) => {
   // Set a filter based on subscription status
   const postFilter = {
     userId: userId,
-    ...(isSubscribed ? {} : { tier: "free" }),
+    ...(isSubscribed ? {} : { tier: "free" }), // If not subscribed, only fetch "free" posts
   };
 
   // Fetch posts based on the filter
