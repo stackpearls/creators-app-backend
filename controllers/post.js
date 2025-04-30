@@ -241,7 +241,7 @@ const getSingleUserPostsWithSubscription = asyncHandler(async (req, res) => {
   // Set a filter based on subscription status
   const postFilter = {
     userId: userId,
-    ...(isSubscribed ? {} : { tier: "free" }), // If not subscribed, only fetch "free" posts
+    ...(isSubscribed ? {} : { tier: "free" }),
   };
 
   // Fetch posts based on the filter
@@ -411,30 +411,34 @@ const getSinglePost = asyncHandler(async (req, res) => {
 
 const getUserPosts = asyncHandler(async (req, res) => {
   if (req.params.id) {
-
     const loggedInUser = await User.findById(req.params.id, null, null).then();
 
     let subscribedUsers = [];
     let unsubscribedUsers = [];
 
     for (let id of loggedInUser.following) {
-      const subscription = await Subscription.findOne({
-        buyerId: req.params.id,
-        creatorId: id,
-        status: "active",
-      }, null, null);
+      const subscription = await Subscription.findOne(
+        {
+          buyerId: req.params.id,
+          creatorId: id,
+          status: "active",
+        },
+        null,
+        null
+      );
 
       subscription ? subscribedUsers.push(id) : unsubscribedUsers.push(id);
     }
 
-    const postFilter = subscribedUsers.length > 0
-      ? {
-        $or: [
-          { userId: { $in: subscribedUsers } },
-          { userId: { $in: unsubscribedUsers }, tier: "free" },
-        ],
-      }
-      : { userId: { $in: loggedInUser.following }, tier: "free" };
+    const postFilter =
+      subscribedUsers.length > 0
+        ? {
+            $or: [
+              { userId: { $in: subscribedUsers } },
+              { userId: { $in: unsubscribedUsers }, tier: "free" },
+            ],
+          }
+        : { userId: { $in: loggedInUser.following }, tier: "free" };
 
     const posts = await Post.aggregate([
       { $match: postFilter },
@@ -485,5 +489,5 @@ module.exports = {
   deletePost,
   getSinglePost,
   getSingleUserPostsWithSubscription,
-  getUserPosts
+  getUserPosts,
 };
