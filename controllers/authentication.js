@@ -240,7 +240,7 @@ const loginFailed = asyncHandler(async (req, res) => {
   res.status(401).json({ message: "Failed logging in" });
 });
 
-//login/signup with facebook
+//login/signup  with fb
 passport.use(
   new FacebookStrategy(
     {
