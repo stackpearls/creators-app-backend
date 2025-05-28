@@ -155,7 +155,7 @@ const loginUser = asyncHandler(async (req, res) => {
           createdAt: user.createdAt,
           creator: user.creator,
           attachmentsForCreator: user.attachmentsForCreator,
-          creatorVerificationStatus: user.creatorVerificationStatus
+          creatorVerificationStatus: user.creatorVerificationStatus,
         });
       } else {
         res.status(400).json({ message: "Please check your credentials" });
@@ -246,7 +246,10 @@ passport.use(
     {
       clientID: process.env.FACEBOOK_APP_ID,
       clientSecret: process.env.FACEBOOK_APP_SECRET,
-      callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/facebook/callback`,
+      callbackURL:
+        process.env.NODE_ENV === "development"
+          ? `${process.env.BASE_URL}:${process.env.PORT}/auth/facebook/callback`
+          : `${process.env.BASE_URL}/api/auth/facebook/callback`,
       profileFields: ["id", "displayName", "emails"],
     },
     async (accessToken, refreshToken, profile, done) => {
@@ -305,7 +308,11 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: `${process.env.BASE_URL}:${process.env.PORT}/auth/google/callback`,
+
+      callbackURL:
+        process.env.NODE_ENV === "development"
+          ? `${process.env.BASE_URL}:${process.env.PORT}/auth/google/callback`
+          : `${process.env.BASE_URL}/api/auth/google/callback`,
       passReqToCallback: true,
     },
     async (req, accessToken, refreshToken, profile, done) => {
