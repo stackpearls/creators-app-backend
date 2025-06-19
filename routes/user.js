@@ -31,9 +31,9 @@ router.patch(
 
 router.patch("/requestForCreator/:id", authorizeUser, upload.fields([
     { name: 'file1', maxCount: 1 },
-    { name: 'file2', maxCount: 1 },
-    { name: 'file3', maxCount: 1 },
-    { name: 'file4', maxCount: 1 }
+    // { name: 'file2', maxCount: 1 },
+    // { name: 'file3', maxCount: 1 },
+    // { name: 'file4', maxCount: 1 }
 ]), requestForCreator);
 
 router.get("/creatorVerificationApproved/:verificationToken/:status", creatorVerificationApproved)
