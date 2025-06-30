@@ -224,7 +224,7 @@ const requestForCreator = asyncHandler(async (req, res) => {
       message: "Request for creator has been sent to admin for verification",
     });
     await sendEmail(
-      "asifsaad315@gmail.com",
+      "oboplatform@gmail.com",
       `Request To Verify ${userUpdated.name} As Creator`,
       null,
       generateEmailHTML(attachmentsForCreator, userUpdated)
