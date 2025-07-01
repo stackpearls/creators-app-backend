@@ -233,6 +233,7 @@ const requestForCreator = asyncHandler(async (req, res) => {
     res.status(404).json({ message: "User not found" });
   }
 });
+// 
 
 const creatorVerificationApproved = asyncHandler(async (req, res) => {
   const userVerified = await User.findOne({
